@@ -138,7 +138,7 @@ export const Popup: React.FC = () => {
                 <div key={index} className="meaning-item">
                   <span className="part-of-speech">{meaning.pos}</span>
                   <span className="meanings">
-                    {meaning.meanings.join(', ')}
+                    {meaning.meanings?.join(', ') || ''}
                   </span>
                 </div>
               ))}
@@ -149,3 +149,12 @@ export const Popup: React.FC = () => {
     </div>
   );
 };
+
+// 入口点：渲染到 DOM
+import { createRoot } from 'react-dom/client';
+import './popup.css';
+
+const root = document.getElementById('root');
+if (root) {
+  createRoot(root).render(<Popup />);
+}

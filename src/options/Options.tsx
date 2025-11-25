@@ -45,12 +45,28 @@ const Options: React.FC = () => {
   const [config, setConfig] = useState<OptionsConfig>(defaultConfig);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const [cacheStats, setCacheStats] = useState({ size: 0, count: 0 });
 
   useEffect(() => {
     // 加载配置
-    chrome.storage.sync.get(Object.keys(defaultConfig), (data) => {
-      setConfig({ ...defaultConfig, ...data });
+    chrome.storage.sync.get(['optionsConfig'], (data) => {
+      if (data.optionsConfig) {
+        setConfig({ ...defaultConfig, ...data.optionsConfig });
+      } else {
+        // 首次使用，保存默认配置
+        console.log('首次使用，初始化默认配置');
+        const translationConfig = {
+          defaultTargetLang: defaultConfig.targetLang,
+          autoDetect: defaultConfig.autoDetectLanguage,
+          enableCache: defaultConfig.cacheEnabled,
+          maxHistoryItems: 100,
+        };
+        chrome.storage.sync.set({ 
+          config: translationConfig,
+          optionsConfig: defaultConfig 
+        });
+      }
     });
 
     // 加载缓存统计
@@ -60,14 +76,15 @@ const Options: React.FC = () => {
   const loadCacheStats = async () => {
     const result = await chrome.storage.local.get('translationCache');
     const cache = result.translationCache || {};
-    const entries = Object.values(cache);
+    const entries = Object.values(cache).filter(Boolean); // 过滤空值
     const size = JSON.stringify(cache).length;
-    setCacheStats({ size, count: entries.length });
+    setCacheStats({ size, count: entries?.length || 0 });
   };
 
   const handleSave = async () => {
     setError('');
     setSaved(false);
+    setMessage('');
 
     // 验证 API 配置
     if (config.apiProvider === 'volcengine') {
@@ -83,7 +100,24 @@ const Options: React.FC = () => {
     }
 
     try {
-      await chrome.storage.sync.set(config);
+      // 转换为 TranslationConfig 格式保存
+      const translationConfig = {
+        volcengineApiKey: config.apiProvider === 'volcengine' ? config.volcengineAccessKey : undefined,
+        volcengineSecretKey: config.apiProvider === 'volcengine' ? config.volcengineSecretKey : undefined,
+        microsoftApiKey: config.apiProvider === 'microsoft' ? config.microsoftApiKey : undefined,
+        microsoftRegion: config.apiProvider === 'microsoft' ? config.microsoftRegion : undefined,
+        defaultTargetLang: config.targetLang,
+        autoDetect: config.autoDetectLanguage,
+        enableCache: config.cacheEnabled,
+        maxHistoryItems: 100,
+      };
+      
+      // 保存两份：一份给 background，一份给 options 页面
+      await chrome.storage.sync.set({ 
+        config: translationConfig,  // background 使用
+        optionsConfig: config        // options 页面使用
+      });
+      
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
@@ -107,23 +141,28 @@ const Options: React.FC = () => {
 
   const handleTestApi = async () => {
     setError('');
+    setMessage('');
+    
     try {
       const response = await chrome.runtime.sendMessage({
         type: 'TRANSLATE',
-        data: {
-          text: 'Hello, world!',
-          sourceLang: 'en',
-          targetLang: 'zh',
-        },
+        text: 'Hello, world!',
+        sourceLang: 'en',
+        targetLang: 'zh',
       });
 
-      if (response.error) {
-        setError(`API 测试失败: ${response.error}`);
+      console.log('API 测试响应:', response);
+
+      if (response && response.success && response.result) {
+        setMessage(`✅ API 测试成功！\n原文: Hello, world!\n译文: ${response.result.translatedText}`);
+      } else if (response && response.error) {
+        setError(`❌ API 测试失败: ${response.error}`);
       } else {
-        alert(`API 测试成功！\n原文: Hello, world!\n译文: ${response.translatedText}`);
+        setError('❌ API 测试失败: 未知错误');
       }
     } catch (err) {
-      setError(`API 测试失败: ${err instanceof Error ? err.message : '未知错误'}`);
+      console.error('API 测试错误:', err);
+      setError(`❌ API 测试失败: ${err instanceof Error ? err.message : '未知错误'}`);
     }
   };
 
@@ -356,6 +395,12 @@ const Options: React.FC = () => {
           {error && (
             <div className="error-message">
               ⚠️ {error}
+            </div>
+          )}
+          
+          {message && (
+            <div className="success-message">
+              {message}
             </div>
           )}
           

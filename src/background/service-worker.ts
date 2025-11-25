@@ -17,11 +17,24 @@ initTranslator();
 browser.runtime.onMessage.addListener(async (message, _sender) => {
   if (message.type === 'TRANSLATE') {
     try {
+      // 验证消息格式
+      if (!message.text || typeof message.text !== 'string') {
+        console.error('Invalid message.text:', message.text);
+        return {
+          success: false,
+          error: '翻译文本不能为空',
+        };
+      }
+
       if (!translator) {
         await initTranslator();
       }
 
-      const result = await translator!.translate(message.text);
+      // 使用消息中的 targetLang 或默认值
+      const targetLang = message.targetLang || 'zh';
+      console.log('翻译请求 - 文本:', message.text, '目标语言:', targetLang);
+      
+      const result = await translator!.translate(message.text, targetLang);
       
       // 保存到历史记录
       await storage.addHistory(result);
@@ -54,7 +67,8 @@ browser.commands.onCommand.addListener(async (command) => {
       });
 
       if (response?.text) {
-        const result = await translator?.translate(response.text);
+        const config = await storage.getConfig();
+        const result = await translator?.translate(response.text, config.defaultTargetLang || 'zh');
         
         if (result) {
           await storage.addHistory(result);

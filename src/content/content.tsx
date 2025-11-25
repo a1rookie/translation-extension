@@ -1,5 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import { FloatingPanel } from './FloatingPanel';
+import './FloatingPanel.css';
 import type { TranslationResult } from '../types';
 
 let currentPanel: HTMLDivElement | null = null;
@@ -9,16 +10,21 @@ let currentRoot: ReturnType<typeof createRoot> | null = null;
 document.addEventListener('mouseup', async (event) => {
   // 等待选择完成
   setTimeout(async () => {
-    const selectedText = window.getSelection()?.toString().trim();
+    const selection = window.getSelection();
+    const selectedText = selection?.toString()?.trim() || '';
 
     if (!selectedText || selectedText.length === 0) {
       removePanel();
       return;
     }
 
-    // 检查是否启用了划词翻译
+    // 检查是否启用了划词翻译（默认启用）
     const config = await chrome.storage.sync.get(['enableSelection']);
-    if (!config.enableSelection) {
+    console.log('划词翻译配置:', config);
+    
+    // 如果 enableSelection 明确设置为 false 才禁用
+    if (config.enableSelection === false) {
+      console.log('划词翻译已禁用');
       return;
     }
 
@@ -30,24 +36,35 @@ document.addEventListener('mouseup', async (event) => {
 
     // 调用翻译
     try {
-      const result = await chrome.runtime.sendMessage({
+      console.log('准备发送翻译请求，文本:', selectedText, '类型:', typeof selectedText, '长度:', selectedText?.length);
+      
+      const response = await chrome.runtime.sendMessage({
         type: 'TRANSLATE',
-        data: {
-          text: selectedText,
-          sourceLang: 'auto',
-          targetLang: 'zh', // 可以从配置读取
-        },
+        text: selectedText,
+        sourceLang: 'auto',
+        targetLang: 'zh',
       });
 
-      if (result.error) {
-        console.error('翻译失败:', result.error);
+      console.log('翻译响应:', response);
+
+      if (!response) {
+        console.error('翻译失败: 无响应');
         return;
       }
 
-      showPanel(result, {
-        x: event.pageX + 10,
-        y: event.pageY + 10,
-      });
+      if (response.error) {
+        console.error('翻译失败:', response.error);
+        return;
+      }
+
+      if (response.success && response.result) {
+        showPanel(response.result, {
+          x: event.pageX + 10,
+          y: event.pageY + 10,
+        });
+      } else {
+        console.error('翻译失败: 响应格式错误', response);
+      }
     } catch (error) {
       console.error('翻译请求失败:', error);
     }

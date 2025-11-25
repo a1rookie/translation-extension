@@ -13,8 +13,14 @@ export class Translator {
     this.config = config;
     this.cache = new CacheManager();
 
-    if (config.volcengineApiKey) {
-      this.volcengine = new VolcengineTranslator(config.volcengineApiKey);
+    console.log('初始化 Translator，配置:', config);
+
+    if (config.volcengineApiKey && config.volcengineSecretKey) {
+      this.volcengine = new VolcengineTranslator(
+        config.volcengineApiKey,
+        config.volcengineSecretKey
+      );
+      console.log('火山翻译已初始化');
     }
 
     if (config.microsoftApiKey) {
@@ -22,6 +28,7 @@ export class Translator {
         config.microsoftApiKey,
         config.microsoftRegion
       );
+      console.log('微软翻译已初始化');
     }
   }
 
@@ -29,6 +36,17 @@ export class Translator {
     text: string,
     targetLang: string = this.config.defaultTargetLang
   ): Promise<TranslationResult> {
+    // 验证输入
+    if (!text || typeof text !== 'string') {
+      console.error('Invalid text for translation:', text);
+      throw new Error('翻译文本不能为空');
+    }
+    
+    if (!targetLang || typeof targetLang !== 'string') {
+      console.error('Invalid targetLang:', targetLang);
+      throw new Error('目标语言不能为空');
+    }
+
     // 检查缓存
     if (this.config.enableCache) {
       const cached = await this.cache.get(text, targetLang);
