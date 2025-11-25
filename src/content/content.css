@@ -1,0 +1,75 @@
+/* Content script 全局样式 */
+body {
+  /* 确保内容脚本不影响页面样式 */
+}
+
+/* 选中文本高亮效果（可选） */
+::selection {
+  /* 保持原有选中样式 */
+}
+
+/* 翻译面板容器 */
+#translation-panel-root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  z-index: 2147483647;
+  pointer-events: none;
+}
+
+#translation-panel-root * {
+  pointer-events: auto;
+}
+
+/* 防止面板被页面样式影响 */
+.translation-floating-panel * {
+  all: revert;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+}
+
+/* 确保面板按钮可点击 */
+.translation-floating-panel button {
+  cursor: pointer;
+}
+
+/* 翻译中的文本标记（可选功能） */
+.text-translating {
+  background-color: rgba(102, 126, 234, 0.1);
+  border-radius: 2px;
+  transition: background-color 0.3s;
+}
+
+.text-translated {
+  background-color: rgba(102, 126, 234, 0.2);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.text-translated:hover {
+  background-color: rgba(102, 126, 234, 0.3);
+}
+
+/* 提示工具条 */
+.translation-tooltip {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 2147483646;
+  white-space: nowrap;
+}
+
+.translation-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.8);
+}
