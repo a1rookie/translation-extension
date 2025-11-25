@@ -10,6 +10,12 @@ export class CacheManager {
   }
 
   private hashCode(str: string): string {
+    // 添加空值检查
+    if (!str || typeof str !== 'string') {
+      console.warn('hashCode received invalid input:', str);
+      return '0';
+    }
+    
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
@@ -20,6 +26,12 @@ export class CacheManager {
   }
 
   async get(text: string, targetLang: string): Promise<TranslationResult | null> {
+    // 检查输入
+    if (!text || !targetLang) {
+      console.warn('Cache.get received invalid parameters:', { text, targetLang });
+      return null;
+    }
+    
     const key = this.getCacheKey(text, targetLang);
     const stored = await browser.storage.local.get(key);
     

@@ -1,11 +1,13 @@
 import type { TranslationResult } from '../types';
 
 export class VolcengineTranslator {
-  private apiKey: string;
+  private accessKey: string;
+  private secretKey: string;
   private baseUrl = 'https://translate.volcengine.com/crx/translate/v1';
 
-  constructor(apiKey: string) {
-    this.apiKey = apiKey;
+  constructor(accessKey: string, secretKey?: string) {
+    this.accessKey = accessKey;
+    this.secretKey = secretKey || '';
   }
 
   async translate(
@@ -18,7 +20,8 @@ export class VolcengineTranslator {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
+          'X-Access-Key': this.accessKey,
+          'X-Secret-Key': this.secretKey,
         },
         body: JSON.stringify({
           source_language: sourceLang,

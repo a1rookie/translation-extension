@@ -15,6 +15,7 @@ export interface TranslationResult {
 
 export interface TranslationConfig {
   volcengineApiKey?: string;
+  volcengineSecretKey?: string;
   microsoftApiKey?: string;
   microsoftRegion?: string;
   defaultTargetLang: string;

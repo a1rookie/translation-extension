@@ -20,18 +20,42 @@ export class StorageManager {
   }
 
   async addHistory(result: TranslationResult): Promise<void> {
-    const history = await this.getHistory();
-    history.unshift(result);
-    
-    const config = await this.getConfig();
-    const trimmed = history.slice(0, config.maxHistoryItems);
-    
-    await browser.storage.local.set({ history: trimmed });
+    try {
+      const history = await this.getHistory();
+      if (!Array.isArray(history)) {
+        console.warn('History is not an array, resetting...');
+        await browser.storage.local.set({ history: [result] });
+        return;
+      }
+      
+      history.unshift(result);
+      
+      const config = await this.getConfig();
+      const maxItems = config.maxHistoryItems || 100;
+      const trimmed = history.slice(0, maxItems);
+      
+      await browser.storage.local.set({ history: trimmed });
+    } catch (error) {
+      console.error('Failed to add history:', error);
+    }
   }
 
   async getHistory(): Promise<TranslationResult[]> {
-    const result = await browser.storage.local.get('history');
-    return result.history || [];
+    try {
+      const result = await browser.storage.local.get('history');
+      const history = result.history;
+      
+      if (!history) return [];
+      if (!Array.isArray(history)) {
+        console.warn('History is not an array, returning empty array');
+        return [];
+      }
+      
+      return history;
+    } catch (error) {
+      console.error('Failed to get history:', error);
+      return [];
+    }
   }
 
   async clearHistory(): Promise<void> {

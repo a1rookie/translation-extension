@@ -1,11 +1,23 @@
 * {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 400px;
+  min-height: 500px;
+  max-height: 600px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 .popup-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
+  min-height: 500px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #333;
 }
