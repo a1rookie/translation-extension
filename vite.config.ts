@@ -20,7 +20,7 @@ export default defineConfig({
           dest: '.'
         },
         {
-          src: 'public/popup.html',
+          src: 'src/popup/popup.html',
           dest: '.'
         },
         {
@@ -33,6 +33,10 @@ export default defineConfig({
         },
         {
           src: 'src/options/options.css',
+          dest: '.'
+        },
+        {
+          src: 'src/content/content.css',
           dest: '.'
         }
       ]

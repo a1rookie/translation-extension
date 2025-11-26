@@ -54,9 +54,13 @@ const Options: React.FC = () => {
       if (data.optionsConfig) {
         setConfig({ ...defaultConfig, ...data.optionsConfig });
       } else {
-        // 首次使用，保存默认配置
+        // 首次使用，保存默认配置（但不包含 API 密钥，需要用户填写）
         console.log('首次使用，初始化默认配置');
         const translationConfig = {
+          volcengineApiKey: undefined,
+          volcengineSecretKey: undefined,
+          microsoftApiKey: undefined,
+          microsoftRegion: 'eastasia',
           defaultTargetLang: defaultConfig.targetLang,
           autoDetect: defaultConfig.autoDetectLanguage,
           enableCache: defaultConfig.cacheEnabled,
@@ -64,7 +68,8 @@ const Options: React.FC = () => {
         };
         chrome.storage.sync.set({ 
           config: translationConfig,
-          optionsConfig: defaultConfig 
+          optionsConfig: defaultConfig,
+          enableSelection: defaultConfig.enableSelection
         });
       }
     });
@@ -102,20 +107,24 @@ const Options: React.FC = () => {
     try {
       // 转换为 TranslationConfig 格式保存
       const translationConfig = {
-        volcengineApiKey: config.apiProvider === 'volcengine' ? config.volcengineAccessKey : undefined,
-        volcengineSecretKey: config.apiProvider === 'volcengine' ? config.volcengineSecretKey : undefined,
-        microsoftApiKey: config.apiProvider === 'microsoft' ? config.microsoftApiKey : undefined,
-        microsoftRegion: config.apiProvider === 'microsoft' ? config.microsoftRegion : undefined,
+        // 总是保存所有配置，但只有选中的 provider 才会被使用
+        volcengineApiKey: config.volcengineAccessKey || undefined,
+        volcengineSecretKey: config.volcengineSecretKey || undefined,
+        microsoftApiKey: config.microsoftApiKey || undefined,
+        microsoftRegion: config.microsoftRegion || 'eastasia',
         defaultTargetLang: config.targetLang,
         autoDetect: config.autoDetectLanguage,
         enableCache: config.cacheEnabled,
         maxHistoryItems: 100,
       };
       
+      console.log('保存配置:', translationConfig);
+      
       // 保存两份：一份给 background，一份给 options 页面
       await chrome.storage.sync.set({ 
         config: translationConfig,  // background 使用
-        optionsConfig: config        // options 页面使用
+        optionsConfig: config,       // options 页面使用
+        enableSelection: config.enableSelection  // 单独保存，方便 content script 读取
       });
       
       setSaved(true);
@@ -143,7 +152,45 @@ const Options: React.FC = () => {
     setError('');
     setMessage('');
     
+    // 验证是否填写了 API 配置
+    if (config.apiProvider === 'volcengine') {
+      if (!config.volcengineAccessKey || !config.volcengineSecretKey) {
+        setError('请先填写火山翻译的 Access Key 和 Secret Key');
+        return;
+      }
+    } else if (config.apiProvider === 'microsoft') {
+      if (!config.microsoftApiKey) {
+        setError('请先填写微软翻译的 API Key');
+        return;
+      }
+    }
+    
     try {
+      // 先保存当前配置到 storage
+      const translationConfig = {
+        volcengineApiKey: config.volcengineAccessKey || undefined,
+        volcengineSecretKey: config.volcengineSecretKey || undefined,
+        microsoftApiKey: config.microsoftApiKey || undefined,
+        microsoftRegion: config.microsoftRegion || 'eastasia',
+        defaultTargetLang: config.targetLang,
+        autoDetect: config.autoDetectLanguage,
+        enableCache: config.cacheEnabled,
+        maxHistoryItems: 100,
+      };
+      
+      await chrome.storage.sync.set({ 
+        config: translationConfig,
+        optionsConfig: config,
+        enableSelection: config.enableSelection
+      });
+      
+      // 通知 background 重新初始化 translator
+      await chrome.runtime.sendMessage({ type: 'RELOAD_CONFIG' });
+      
+      // 等待一下让 background 重新初始化
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // 然后测试翻译
       const response = await chrome.runtime.sendMessage({
         type: 'TRANSLATE',
         text: 'Hello, world!',
