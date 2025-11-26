@@ -280,17 +280,40 @@ function showFloatingButton(text: string, position: { x: number; y: number }) {
     }
 
     .word-count {
-      position: absolute;
-      bottom: -20px;
-      left: 50%;
-      transform: translateX(-50%);
+      margin-top: 8px;
+      padding: 4px 8px;
+      background: rgba(99, 102, 241, 0.1);
+      border-radius: 4px;
       font-size: 11px;
-      color: #667eea;
-      background: white;
-      padding: 2px 8px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      white-space: nowrap;
+      color: #6366f1;
+      text-align: center;
+      font-weight: 500;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    .usage-stats {
+      margin-top: 8px;
+      padding: 6px 10px;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+      border-radius: 6px;
+      border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+
+    .provider-name {
+      font-size: 10px;
+      color: #8b5cf6;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    .usage-amount {
+      font-size: 11px;
+      color: #6366f1;
+      text-align: center;
       font-weight: 500;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }

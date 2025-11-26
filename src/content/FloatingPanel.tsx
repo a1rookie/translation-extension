@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { TranslationResult } from '../types';
+import browser from 'webextension-polyfill';
+import type { TranslationResult, UsageStats } from '../types';
 
 interface FloatingPanelProps {
   result: TranslationResult;
@@ -10,6 +11,7 @@ interface FloatingPanelProps {
 export const FloatingPanel: React.FC<FloatingPanelProps> = React.memo(
   ({ result, position, onClose }) => {
     const [visible, setVisible] = useState(false);
+    const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
     const panelRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -21,7 +23,49 @@ export const FloatingPanel: React.FC<FloatingPanelProps> = React.memo(
         console.log('面板设置为可见');
       }, 10);
 
-      return () => clearTimeout(timer);
+      // 加载使用量统计 - 使用本地统计
+      const loadUsageStats = async () => {
+        try {
+          const config = await browser.storage.sync.get('config');
+          const stats = config.config?.usageStats;
+
+          if (stats) {
+            console.log('FloatingPanel: 使用量统计:', stats);
+            setUsageStats(stats);
+          } else {
+            // 初始化默认值
+            console.log('FloatingPanel: 初始化默认使用量统计');
+            setUsageStats({
+              volcengine: { totalCharacters: 0, lastReset: Date.now() },
+              microsoft: { totalCharacters: 0, lastReset: Date.now() },
+            });
+          }
+        } catch (error) {
+          console.error('FloatingPanel: 加载使用量统计失败:', error);
+          // 出错也设置默认值
+          setUsageStats({
+            volcengine: { totalCharacters: 0, lastReset: Date.now() },
+            microsoft: { totalCharacters: 0, lastReset: Date.now() },
+          });
+        }
+      };
+
+      loadUsageStats();
+
+      // 监听存储变化以实时更新使用量
+      const handleStorageChange = (changes: any, area: string) => {
+        if (area === 'sync' && changes.config?.newValue?.usageStats) {
+          console.log('FloatingPanel: 更新使用量统计', changes.config.newValue.usageStats);
+          setUsageStats(changes.config.newValue.usageStats);
+        }
+      };
+
+      browser.storage.onChanged.addListener(handleStorageChange);
+
+      return () => {
+        clearTimeout(timer);
+        browser.storage.onChanged.removeListener(handleStorageChange);
+      };
     }, []);
 
     useEffect(() => {
@@ -136,6 +180,16 @@ export const FloatingPanel: React.FC<FloatingPanelProps> = React.memo(
         </div>
 
         <div className="panel-footer">
+          {usageStats && (
+            <div className="usage-info">
+              <span className="provider-badge">
+                {result.provider === 'volcengine' ? '火山翻译' : '微软翻译'}
+              </span>
+              <span className="usage-text">
+                已使用 {usageStats[result.provider].totalCharacters.toLocaleString()} 字符
+              </span>
+            </div>
+          )}
           <button
             className="action-btn copy-btn"
             onClick={handleCopy}

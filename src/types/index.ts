@@ -13,6 +13,17 @@ export interface TranslationResult {
   detailedMeanings?: DetailedMeaning[];
 }
 
+export interface UsageStats {
+  volcengine: {
+    totalCharacters: number;
+    lastReset: number; // timestamp
+  };
+  microsoft: {
+    totalCharacters: number;
+    lastReset: number; // timestamp
+  };
+}
+
 export interface TranslationConfig {
   volcengineApiKey?: string;
   volcengineSecretKey?: string;
@@ -22,6 +33,7 @@ export interface TranslationConfig {
   autoDetect: boolean;
   enableCache: boolean;
   maxHistoryItems: number;
+  usageStats?: UsageStats;
 }
 
 export interface CacheItem {

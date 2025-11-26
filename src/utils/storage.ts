@@ -1,11 +1,21 @@
 import browser from 'webextension-polyfill';
-import type { TranslationConfig, TranslationResult } from '../types';
+import type { TranslationConfig, TranslationResult, UsageStats } from '../types';
 
 const DEFAULT_CONFIG: TranslationConfig = {
   defaultTargetLang: 'zh',
   autoDetect: true,
   enableCache: true,
   maxHistoryItems: 100,
+  usageStats: {
+    volcengine: {
+      totalCharacters: 0,
+      lastReset: Date.now(),
+    },
+    microsoft: {
+      totalCharacters: 0,
+      lastReset: Date.now(),
+    },
+  },
 };
 
 export class StorageManager {
@@ -27,13 +37,13 @@ export class StorageManager {
         await browser.storage.local.set({ history: [result] });
         return;
       }
-      
+
       history.unshift(result);
-      
+
       const config = await this.getConfig();
       const maxItems = config.maxHistoryItems || 100;
       const trimmed = history.slice(0, maxItems);
-      
+
       await browser.storage.local.set({ history: trimmed });
     } catch (error) {
       console.error('Failed to add history:', error);
@@ -44,13 +54,13 @@ export class StorageManager {
     try {
       const result = await browser.storage.local.get('history');
       const history = result.history;
-      
+
       if (!history) return [];
       if (!Array.isArray(history)) {
         console.warn('History is not an array, returning empty array');
         return [];
       }
-      
+
       return history;
     } catch (error) {
       console.error('Failed to get history:', error);
@@ -60,5 +70,50 @@ export class StorageManager {
 
   async clearHistory(): Promise<void> {
     await browser.storage.local.remove('history');
+  }
+
+  // 更新使用量统计
+  async updateUsageStats(provider: 'volcengine' | 'microsoft', characters: number): Promise<void> {
+    try {
+      const config = await this.getConfig();
+      const usageStats = config.usageStats || DEFAULT_CONFIG.usageStats!;
+
+      usageStats[provider].totalCharacters += characters;
+
+      await this.setConfig({ usageStats });
+      console.log(`Updated ${provider} usage: +${characters} characters, total: ${usageStats[provider].totalCharacters}`);
+    } catch (error) {
+      console.error('Failed to update usage stats:', error);
+    }
+  }
+
+  // 获取使用量统计
+  async getUsageStats(): Promise<UsageStats> {
+    const config = await this.getConfig();
+    return config.usageStats || DEFAULT_CONFIG.usageStats!;
+  }
+
+  // 重置使用量统计
+  async resetUsageStats(provider?: 'volcengine' | 'microsoft'): Promise<void> {
+    const config = await this.getConfig();
+    const usageStats = config.usageStats || DEFAULT_CONFIG.usageStats!;
+
+    if (provider) {
+      usageStats[provider] = {
+        totalCharacters: 0,
+        lastReset: Date.now(),
+      };
+    } else {
+      usageStats.volcengine = {
+        totalCharacters: 0,
+        lastReset: Date.now(),
+      };
+      usageStats.microsoft = {
+        totalCharacters: 0,
+        lastReset: Date.now(),
+      };
+    }
+
+    await this.setConfig({ usageStats });
   }
 }

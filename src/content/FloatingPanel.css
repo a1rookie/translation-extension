@@ -134,12 +134,43 @@
 }
 
 .panel-footer {
-  padding: 16px 20px;
+  padding: 12px 20px;
   background: rgba(102, 126, 234, 0.03);
   border-top: 1px solid rgba(102, 126, 234, 0.1);
   display: flex;
-  gap: 10px;
-  justify-content: flex-end;
+  gap: 12px;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.usage-info {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #666;
+}
+
+.provider-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #8b5cf6;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.usage-text {
+  font-size: 11px;
+  color: #6366f1;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .action-btn {
@@ -156,6 +187,8 @@
   align-items: center;
   gap: 6px;
   font-weight: 500;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .action-btn:hover {
