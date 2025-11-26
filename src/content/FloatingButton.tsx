@@ -77,21 +77,30 @@ export const FloatingButton: React.FC<FloatingButtonProps> = ({
       let newX = position.x;
       let newY = position.y;
 
-      if (rect.right > viewportWidth) {
+      // 水平方向调整：确保不超出右边界
+      if (rect.right > viewportWidth - 10) {
         newX = viewportWidth - rect.width - 10;
       }
+      // 确保不超出左边界
       if (newX < 10) {
         newX = 10;
       }
 
-      if (rect.bottom > viewportHeight) {
+      // 垂直方向调整：确保不超出下边界
+      if (rect.bottom > viewportHeight - 10) {
         newY = viewportHeight - rect.height - 10;
       }
+      // 确保不超出上边界
       if (newY < 10) {
         newY = 10;
       }
 
-      if (newX !== position.x || newY !== position.y) {
+      // 只有位置发生变化时才更新
+      if (Math.abs(newX - position.x) > 1 || Math.abs(newY - position.y) > 1) {
+        console.log('FloatingButton: 调整位置', { 
+          原始: position, 
+          调整后: { x: newX, y: newY } 
+        });
         button.style.left = `${newX}px`;
         button.style.top = `${newY}px`;
       }

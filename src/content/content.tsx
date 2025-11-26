@@ -10,7 +10,7 @@ let currentPosition = { x: 0, y: 0 };
 let isTranslating = false; // 添加翻译状态标志
 
 // 监听文本选择
-document.addEventListener('mouseup', async (event) => {
+document.addEventListener('mouseup', async () => {
   // 如果正在翻译，不处理新的选择
   if (isTranslating) {
     console.log('正在翻译中，忽略新的选择');
@@ -49,14 +49,71 @@ document.addEventListener('mouseup', async (event) => {
       return;
     }
 
+    // 获取选中文本的位置（使用选区的边界矩形）
+    if (!selection || selection.rangeCount === 0) {
+      console.warn('无法获取选区信息');
+      return;
+    }
+
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+
+    // 计算悬浮球位置：优先显示在选中文本下方，如果空间不够则显示在上方
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    const spaceBelow = viewportHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    // 使用视口坐标（因为 position: fixed）
+    let posX = rect.left;
+    let posY: number;
+
+    // 如果下方空间充足（大于 100px），显示在下方
+    if (spaceBelow > 100) {
+      posY = rect.bottom + 8;
+      console.log('悬浮球显示在选中文本下方');
+    } 
+    // 否则如果上方空间充足，显示在上方
+    else if (spaceAbove > 100) {
+      posY = rect.top - 70; // 预留悬浮球高度（约60px）+ 间距
+      console.log('悬浮球显示在选中文本上方');
+    } 
+    // 如果上下空间都不够，显示在右侧
+    else {
+      posY = rect.top;
+      posX = rect.right + 10;
+      console.log('悬浮球显示在选中文本右侧');
+    }
+
+    // 确保不超出左边界
+    if (posX < 10) {
+      posX = 10;
+    }
+
+    // 确保不超出右边界（预估悬浮球宽度约200px）
+    if (posX + 200 > viewportWidth) {
+      posX = viewportWidth - 210;
+    }
+
     // 保存当前位置
     currentPosition = {
-      x: event.pageX + 10,
-      y: event.pageY + 10,
+      x: posX,
+      y: posY,
     };
 
-    // 显示悬浮球（文本会在 showFloatingButton 中保存）
-    console.log('准备显示悬浮球，文本:', selectedText);
+    console.log('准备显示悬浮球');
+    console.log('- 选中文本:', selectedText);
+    console.log('- 选区矩形 (视口坐标):', { 
+      left: rect.left.toFixed(1), 
+      top: rect.top.toFixed(1), 
+      right: rect.right.toFixed(1), 
+      bottom: rect.bottom.toFixed(1),
+      width: rect.width.toFixed(1),
+      height: rect.height.toFixed(1)
+    });
+    console.log('- 视口尺寸:', { width: viewportWidth, height: viewportHeight });
+    console.log('- 可用空间:', { above: spaceAbove.toFixed(1), below: spaceBelow.toFixed(1) });
+    console.log('- 悬浮球位置:', { x: posX.toFixed(1), y: posY.toFixed(1) });
     showFloatingButton(selectedText, currentPosition);
   }, 100);
 });
